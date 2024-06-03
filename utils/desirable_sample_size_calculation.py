@@ -3,7 +3,7 @@ import numpy as np
 from utils.alternative_hypothesis_type import AlternativeHypothesisType
 from utils.normal_distribution import ProbabilityDistribution
 from utils.statistical_power_calculation import calculate_statistical_power
-
+import scipy.stats as stats
 
 SAMPLE_SIZE_SEARCH_START: Final = 1
 SAMPLE_SIZE_SEARCH_END: Final = 10**7
@@ -39,6 +39,8 @@ class DesirableSampleSizeSimulatorWithBinaryMetric:
             return sample_size_calcuration_by_formula(
                 np.sqrt(control_metric_mean * (1 - control_metric_mean)),
                 treatment_metric_mean - control_metric_mean,
+                alpha=self.significance_level,
+                beta=1 - self.desirable_power,
             )
 
         for sample_size in SAMPLE_SIZE_SEARCH_RANGE:
@@ -115,6 +117,8 @@ class DesirableSampleSizeSimulatorWithNonBinaryMetric:
             return sample_size_calcuration_by_formula(
                 np.sqrt(metric_variance),
                 treatment_metric_mean - control_metric_mean,
+                alpha=self.significance_level,
+                beta=1 - self.desirable_power,
             )
 
         for sample_size in SAMPLE_SIZE_SEARCH_RANGE:
@@ -173,11 +177,24 @@ class DesirableSampleSizeSimulatorWithNonBinaryMetric:
         return ProbabilityDistribution(alternative_mean, alternative_std)
 
 
-def sample_size_calcuration_by_formula(sigma: float, Delta: float) -> float:
+def sample_size_calcuration_by_formula(
+    sigma: float,
+    Delta: float,
+    alpha: float = 0.05,
+    beta: float = 0.2,
+) -> float:
     """サンプルサイズの公式に基づいて、適切なサンプルサイズを計算する関数
-    n = 16 * (sigma^2 / Delta^2)
+    n = 2 * sigma^2 * (Z_{1- alpha/2} + Z_{1-beta})^2 / Delta^2
     - n: サンプルサイズ(各グループ)
     - sigma: metricの標準偏差
     - Delta: 仮定するtreatment群とcontrol群のmetricの期待値の差
+    - alpha: 有意水準
+    - beta: 検出力
     """
-    return int(16 * (sigma**2 / Delta**2))
+    # Z値(=標準正規分布のppf)を計算
+    ## ppf (=Percent Point Function) は累積分布関数の逆関数
+    Z_1_minus_alpha_over_2 = stats.norm.ppf(1 - alpha / 2)
+    Z_1_minus_beta = stats.norm.ppf(1 - beta)
+
+    # サンプルサイズを計算
+    return int(2 * sigma**2 * (Z_1_minus_alpha_over_2 + Z_1_minus_beta) ** 2 / Delta**2)
