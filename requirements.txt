@@ -1,0 +1,9 @@
+scipy
+pydantic
+numpy
+pandas
+polars
+streamlit
+statsmodels
+matplotlib
+patito
