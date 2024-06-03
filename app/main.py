@@ -1,6 +1,14 @@
+# root directoryをpythonのpathに追加する
+import sys
+from pathlib import Path
+
+root_dir = str(Path(__file__).parent.parent)
+print(root_dir)
+sys.path.append(root_dir)
+
 import streamlit as st
-from streamlit import selectbox
 from app.pages import binary_metric_page, non_binary_metric_page
+
 
 # タイトルの設定()
 st.title("under-poweredなABテストを避けるための適切なサンプルサイズ計算")
